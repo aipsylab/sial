@@ -1,2 +1,2 @@
-# sial
+# SIAL: Statistical Inference After Learning
  
