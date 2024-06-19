@@ -2,4 +2,4 @@
 Pipfile
 Pipfile.lock
 /dist
-/sial.egg-info
+/sial_pkg.egg-info
