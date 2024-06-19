@@ -1,0 +1,26 @@
+[project]
+
+name = "sial"
+
+version = "0.0.1"
+
+authors = [
+  { name="Po-Hsien Huang", email="psyphh@nccu.edu.tw" },
+]
+
+description = "Statistical Inference After Learning"
+
+readme = "README.md"
+
+dependencies = [
+  "scikit-learn>=1.5.0",
+  "pandas>=2.2.2",
+]
+
+requires-python = ">=3.9"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]

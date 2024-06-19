@@ -532,25 +532,28 @@ class CIT(Inferer):
         
         if is_crosser:
             l_features = learner._features(X, y)
-            l_targets = learner._targets(X, y, binarize)
+            if isinstance(y, pd.Series):
+                l_targets = learner._targets(X, y.values, binarize)
+            else:
+                l_targets = learner._targets(X, y, binarize)
             l_preds = [getattr(learner, response_method)(l_feature, split = split) 
                        for split, l_feature in enumerate(l_features)]
             l_losses = [loss_func(l_target, l_pred)
                        for l_target, l_pred in zip(l_targets, l_preds)]
         else:
             l_features = [X]
-            if is_classifier(learner):
-                if binarize:
-                    label_binarizer = LabelBinarizer()
-                    if hasattr(learner, "classes_"):
-                        _ = label_binarizer.fit(learner.classes_)
-                    else:
-                        _ = label_binarizer.fit(sorted(set(y)))
-                    l_targets = [label_binarizer.transform(y)]
+            if is_classifier(learner) and binarize:
+                label_binarizer = LabelBinarizer()
+                if hasattr(learner, "classes_"):
+                    _ = label_binarizer.fit(learner.classes_)
+                else:
+                    _ = label_binarizer.fit(sorted(set(y)))
+                l_targets = [label_binarizer.transform(y)]
+            else:
+                if isinstance(y, pd.Series):
+                    l_targets = [y.values]
                 else:
                     l_targets = [y]
-            else:
-                l_targets = [y]
             l_preds = [getattr(learner, response_method)(l_feature) 
                        for l_feature in l_features]
             l_losses = [loss_func(l_target, l_pred)
@@ -784,7 +787,10 @@ class RIT(Inferer):
 
         if is_crosser:
             l_features = learner._features(X, y)
-            l_targets = learner._targets(X, y, binarize)
+            if isinstance(y, pd.Series):
+                l_targets = learner._targets(X, y.values, binarize)
+            else:
+                l_targets = learner._targets(X, y, binarize)
             l_preds = [getattr(learner, response_method)(
                 l_feature, split = split) 
                        for split, l_feature in enumerate(l_features)]
@@ -792,21 +798,21 @@ class RIT(Inferer):
                        for l_target, l_pred in zip(l_targets, l_preds)]
         else:
             l_features = [X]
-            if is_classifier(learner):
-                if binarize:
-                    label_binarizer = LabelBinarizer()
-                    if hasattr(learner, "classes_"):
-                        _ = label_binarizer.fit(learner.classes_)
-                    else:
-                        _ = label_binarizer.fit(sorted(set(y)))
-                    target = label_binarizer.transform(y)
-                    if target.shape[1] == 1:
-                        target = np.append(1 - target, target, axis=1)    
-                    l_targets = [target]
+            if is_classifier(learner) and binarize:
+                label_binarizer = LabelBinarizer()
+                if hasattr(learner, "classes_"):
+                    _ = label_binarizer.fit(learner.classes_)
+                else:
+                    _ = label_binarizer.fit(sorted(set(y)))
+                target = label_binarizer.transform(y)
+                if target.shape[1] == 1:
+                    target = np.append(1 - target, target, axis=1)    
+                l_targets = [target]
+            else:
+                if isinstance(y, pd.Series):
+                    l_targets = [y.values]
                 else:
                     l_targets = [y]
-            else:
-                l_targets = [y]
             l_preds = [getattr(learner, response_method)(l_feature) 
                        for l_feature in l_features]
             l_losses = [loss_func(l_target, l_pred)
@@ -845,10 +851,6 @@ class RIT(Inferer):
                        for r_feature in r_features]
             r_losses = [loss_func(r_target, r_pred)
                        for r_target, r_pred in zip(r_targets, r_preds)]        
-
-        if isinstance(y, pd.Series):
-            l_losses = [l_loss.values for l_loss in l_losses]
-            r_losses = [r_loss.values for r_loss in r_losses]
 
         if double_split:
             l_losses = [l_loss[[i for i in range(len(l_loss)) if i % 2 == 0]] 
