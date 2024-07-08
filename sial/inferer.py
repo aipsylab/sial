@@ -144,10 +144,8 @@ class Inferer():
             if `learner` is a `Crosser` with `n_splits` > 1. If `n_repeats` 
             > 1, `None` means `True`; Otherwise, `None` means `False`.
 
-        reverse : bool, default=True
-            If `True`, negative values of `estimate` will be reported. Note 
-            that when `reverse` is False, a smaller `estimate` indicates the 
-            removed feature is more important.
+        reverse : bool, default=False
+            If `True`, negative values of `estimate` will be reported. 
 
         verbose : bool, default=True
             Controls the verbosity.
@@ -528,43 +526,44 @@ class CIT(Inferer):
         is_crosser = self._is_crosser
         binarize = self._binarize
         response_method = self._response_method
-                
+
+        X_copy, y_copy = X.copy(), y.copy() 
         
         if is_crosser:
-            l_features = learner._features(X, y)
+            l_features = learner._features(X_copy, y_copy)
             if isinstance(y, pd.Series):
-                l_targets = learner._targets(X, y.values, binarize)
+                l_targets = learner._targets(X_copy, y_copy.values, binarize)
             else:
-                l_targets = learner._targets(X, y, binarize)
+                l_targets = learner._targets(X_copy, y_copy, binarize)
             l_preds = [getattr(learner, response_method)(l_feature, split = split) 
                        for split, l_feature in enumerate(l_features)]
             l_losses = [loss_func(l_target, l_pred)
                        for l_target, l_pred in zip(l_targets, l_preds)]
         else:
-            l_features = [X]
+            l_features = [X_copy]
             if is_classifier(learner) and binarize:
                 label_binarizer = LabelBinarizer()
                 if hasattr(learner, "classes_"):
                     _ = label_binarizer.fit(learner.classes_)
                 else:
-                    _ = label_binarizer.fit(sorted(set(y)))
-                l_targets = [label_binarizer.transform(y)]
+                    _ = label_binarizer.fit(sorted(set(y_copy)))
+                l_targets = [label_binarizer.transform(y_copy)]
             else:
-                if isinstance(y, pd.Series):
-                    l_targets = [y.values]
+                if isinstance(y_copy, pd.Series):
+                    l_targets = [y_copy.values]
                 else:
-                    l_targets = [y]
+                    l_targets = [y_copy]
             l_preds = [getattr(learner, response_method)(l_feature) 
                        for l_feature in l_features]
             l_losses = [loss_func(l_target, l_pred)
                         for l_target, l_pred in zip(l_targets, l_preds)]
         
-        if isinstance(X, pd.DataFrame):
-            X_removed = X.drop(removal, axis = 1)
-            y_removed = X[removal]
+        if isinstance(X_copy, pd.DataFrame):
+            X_removed = X_copy.drop(removal, axis = 1)
+            y_removed = X_copy[removal]
         else:
-            X_removed = np.delete(X, removal, axis = 1)    
-            y_removed = X[:, removal]
+            X_removed = np.delete(X_copy, removal, axis = 1)    
+            y_removed = X_copy[:, removal]
         
         r_features = l_features
         
@@ -784,48 +783,49 @@ class RIT(Inferer):
         is_crosser = self._is_crosser
         binarize = self._binarize
         response_method = self._response_method
-
+        
+        X_copy, y_copy = X.copy(), y.copy() 
         if is_crosser:
-            l_features = learner._features(X, y)
-            if isinstance(y, pd.Series):
-                l_targets = learner._targets(X, y.values, binarize)
+            l_features = learner._features(X_copy, y_copy)
+            if isinstance(y_copy, pd.Series):
+                l_targets = learner._targets(X_copy, y_copy.values, binarize)
             else:
-                l_targets = learner._targets(X, y, binarize)
+                l_targets = learner._targets(X_copy, y_copy, binarize)
             l_preds = [getattr(learner, response_method)(
                 l_feature, split = split) 
                        for split, l_feature in enumerate(l_features)]
             l_losses = [loss_func(l_target, l_pred)
                        for l_target, l_pred in zip(l_targets, l_preds)]
         else:
-            l_features = [X]
+            l_features = [X_copy]
             if is_classifier(learner) and binarize:
                 label_binarizer = LabelBinarizer()
                 if hasattr(learner, "classes_"):
                     _ = label_binarizer.fit(learner.classes_)
                 else:
-                    _ = label_binarizer.fit(sorted(set(y)))
-                target = label_binarizer.transform(y)
+                    _ = label_binarizer.fit(sorted(set(y_copy)))
+                target = label_binarizer.transform(y_copy)
                 if target.shape[1] == 1:
                     target = np.append(1 - target, target, axis=1)    
                 l_targets = [target]
             else:
-                if isinstance(y, pd.Series):
-                    l_targets = [y.values]
+                if isinstance(y_copy, pd.Series):
+                    l_targets = [y_copy.values]
                 else:
-                    l_targets = [y]
+                    l_targets = [y_copy]
             l_preds = [getattr(learner, response_method)(l_feature) 
                        for l_feature in l_features]
             l_losses = [loss_func(l_target, l_pred)
                         for l_target, l_pred in zip(l_targets, l_preds)]
 
-        if isinstance(X, pd.DataFrame):
-            X_removed = X.drop(removal, axis = 1)
+        if isinstance(X_copy, pd.DataFrame):
+            X_removed = X_copy.drop(removal, axis = 1)
         else:
-            X_removed = np.delete(X, removal, axis = 1)   
+            X_removed = np.delete(X_copy, removal, axis = 1)   
 
         if isinstance(competitor, Crosser):
-            r_features = competitor._features(X_removed, y)
-            r_targets = competitor._targets(X_removed, y, binarize)
+            r_features = competitor._features(X_removed, y_copy)
+            r_targets = competitor._targets(X_removed, y_copy, binarize)
             r_preds = [getattr(competitor, response_method)(
                 r_feature, split = split) 
                        for split, r_feature in enumerate(r_features)]
@@ -833,20 +833,20 @@ class RIT(Inferer):
                        for r_target, r_pred in zip(r_targets, r_preds)]
         else:
             if is_crosser:
-                r_features = learner._features(X_removed, y)
-                r_targets = learner._targets(X_removed, y, binarize)
+                r_features = learner._features(X_removed, y_copy)
+                r_targets = learner._targets(X_removed, y_copy, binarize)
             else:        
                 r_features = [X_removed]
                 if is_classifier(competitor):
                     if binarize:
-                        target = label_binarizer.transform(y)
+                        target = label_binarizer.transform(y_copy)
                         if target.shape[1] == 1:
                             target = np.append(1 - target, target, axis=1)    
                         r_targets = [target]
                     else:
-                        r_targets = [y]
+                        r_targets = [y_copy]
                 else:
-                    r_targets = [y]
+                    r_targets = [y_copy]
             r_preds = [getattr(competitor, response_method)(r_feature) 
                        for r_feature in r_features]
             r_losses = [loss_func(r_target, r_pred)
