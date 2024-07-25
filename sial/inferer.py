@@ -191,12 +191,20 @@ class Inferer():
 
         if cross_fit:
             sizes = sizes.reshape(
-                (n_repeats, n_folds)).sum(axis = 1)
+                (n_repeats, n_folds)).sum(axis = 1)         
+            if double_split:
+                std_errors = (std_errors.reshape(
+                    (n_repeats, n_folds)).mean(axis = 1) * 
+                              np.sqrt(1 / n_folds))
+            else:
+                std_errors_a = np.square(
+                    std_errors.reshape(
+                        (n_repeats, n_folds))).mean(axis = 1)
+                std_errors_b = estimates.reshape(
+                    (n_repeats, n_folds)).var(axis = 1) / np.round(sizes / n_folds)
+                std_errors = np.sqrt((std_errors_a + std_errors_b) / n_folds)
             estimates = estimates.reshape(
                 (n_repeats, n_folds)).mean(axis = 1)
-            std_errors = (std_errors.reshape(
-                (n_repeats, n_folds)).mean(axis = 1) * 
-                          np.sqrt(1 / n_folds))
             if (null_dist == "permutation") or (null_dist == "resampling"):
                 null_values = np.array(null_values)
                 null_values = null_values.reshape(
