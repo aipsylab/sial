@@ -9,7 +9,14 @@ def _sample(
     y, 
     n_copies = None,
     random_state = None):
-        rng = np.random.default_rng(random_state)
+    rng = np.random.default_rng(random_state)
+    if estimator is None:
+        if n_copies is None:
+            rv = rng.permutation(y)
+        else:
+            rv = np.array(
+                [rng.permutation(y) for copy in range(n_copies)])
+    else:
         if is_classifier(estimator):
             pred = estimator.predict_proba(X)
             label_binarizer = LabelBinarizer()
@@ -27,12 +34,11 @@ def _sample(
             pred = estimator.predict(X)
             res = y - pred
             if n_copies is None:
-                rv = pred + rng.choice(res, len(pred), False)
+                rv = pred + rng.permutation(res)
             else:
                 rv = pred + np.array(
-                    [rng.choice(res, len(pred), False) 
-                     for copy in range(n_copies)])
-        return rv
+                    [rng.permutation(res) for copy in range(n_copies)])
+    return rv
 
 
 class NotInferredError(ValueError):
