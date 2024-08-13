@@ -2,7 +2,7 @@
 
 name = "sial-pkg"
 
-version = "0.0.7"
+version = "0.0.8"
 
 authors = [
   { name="Po-Hsien Huang", email="psyphh@nccu.edu.tw" },

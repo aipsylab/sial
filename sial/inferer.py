@@ -681,10 +681,6 @@ class CIT(Inferer):
         removal = self.removal
         method = self.method
         
-        if sampler is None:
-            raise ValueError(
-                "When implementing `CIT`, "
-                "`sampler` must be given.")
         if isinstance(learner, Crosser):
             if isinstance(sampler, Crosser):
                 if not learner.cv == sampler.cv:
@@ -695,7 +691,7 @@ class CIT(Inferer):
             if isinstance(sampler, Crosser):
                 raise ValueError(
                     "When `learner` is not `Crosser`, "
-                    "`sampler` must be usual `Estimator`.")  
+                    "`sampler` must be usual `Estimator` or `None`.")  
         if isinstance(removal, list):
             raise ValueError(
                 "When implementing `CIT`, "
